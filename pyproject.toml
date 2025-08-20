@@ -1,0 +1,53 @@
+[project]
+name = "text-autocomplete"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+dependencies = [
+    "jupyter>=1.1.1",
+    "jupytext>=1.17.2",
+    "matplotlib>=3.10.5",
+    "pydantic>=2.8.0",
+    "torch>=2.8.0",
+    "tqdm>=4.67.1",
+    "transformers>=4.55.2",
+]
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.138.2",
+    "pytest>=8.4.1",
+    "pyyaml>=6.0.2",
+    "ruff>=0.12.9",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "W",   # pycodestyle/pyflakes/warnings
+  "I",               # isort
+  "B",               # flake8-bugbear
+  "UP",              # pyupgrade
+]
+ignore = [
+  "D",  # keep docstrings optional to keep code short
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = true
+
+[tool.basedpyright]
+typeCheckingMode = "basic"
+reportMissingTypeStubs = "none"
+reportUnknownParameterType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportUnknownMemberType = "none"
+reportPrivateImportUsage = "none"
+pythonVersion = "3.10"

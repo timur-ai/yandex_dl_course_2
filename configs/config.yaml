@@ -1,0 +1,164 @@
+# Project configuration for text autocomplete.
+# All values are documented inline. Edit as needed and re-run the notebook.
+
+data:
+  # Absolute or relative path to a line-delimited text file (UTF-8), one text per line.
+  raw_data_path: data/tweets.txt
+  # Output path for the cleaned, normalized dataset (single column: text).
+  processed_path: data/dataset_processed.csv
+  # Output paths for persisted splits
+  train_path: data/train.csv
+  val_path: data/val.csv
+  test_path: data/test.csv
+  # Limit the number of rows loaded for faster local iteration. Use null for full dataset.
+  dev_limit: null
+
+preprocessing:
+  # Drop texts shorter than this many characters after normalization.
+  min_chars: 5
+  # Drop texts with more than this many whitespace-separated tokens (rough guard against outliers).
+  max_tokens: 60
+
+tokenizer:
+  # Maximum vocabulary size excluding special tokens; most frequent tokens are kept.
+  max_vocab_size: 20000
+  # Regex pattern for tokenization (compiled at runtime).
+  token_pattern: '\\w+|[^\\w\\s]'
+  # Minimum frequency for tokens to be included in the vocabulary (filters noise).
+  min_freq: 1
+
+split:
+  # Deterministic shuffling seed for 80/10/10 split.
+  seed: 42
+  # Fractions for train and validation; test is the remainder.
+  train_frac: 0.80
+  val_frac: 0.10
+
+sequence:
+  # Maximum sequence length used for training after shifting (X=[:-1], Y=[1:]).
+  max_length: 64
+
+# Special tokens used by the tokenizer and model.
+special_tokens:
+  pad: "<pad>"
+  unk: "<unk>"
+  bos: "<bos>"
+  eos: "<eos>"
+
+model:
+  lstm:
+    # Embedding dimension for token embeddings.
+    embedding_dim: 256
+    # LSTM hidden size per layer.
+    hidden_size: 128
+    # Number of stacked LSTM layers.
+    num_layers: 2
+    # Dropout applied to LSTM outputs and classifier head during training.
+    dropout: 0.2
+
+training:
+  # Number of epochs to train the LSTM model.
+  epochs: 10
+  # Per-step batch size (before any gradient accumulation).
+  batch_size: 256
+  # Adam learning rate.
+  learning_rate: 0.001
+  # L2 weight decay for Adam; set 0.0 to disable.
+  weight_decay: 0.0
+  # Max global gradient norm for clipping.
+  max_grad_norm: 1.0
+  # Log frequency in training steps.
+  log_every: 100
+
+scheduler:
+  # Enable StepLR scheduler.
+  use: true
+  # Reduce LR every `step_size` epochs by multiplying with `gamma`.
+  step_size: 1
+  gamma: 0.95
+
+dataloader:
+  # Number of workers on CPU-only runs. Set 0 for notebook stability on Windows.
+  num_workers_cpu: 0
+  # Number of workers on CUDA runs. Use null to auto-choose (0 on Windows, up to 4 elsewhere).
+  num_workers_cuda: null
+  # Pin host memory for faster device transfers (meaningful on CUDA). If null, defaults to true on CUDA and false on CPU.
+  pin_memory: null
+  # Keep workers alive between epochs. If null, defaults to (num_workers > 0).
+  persistent_workers: null
+
+generation:
+  # Maximum number of new tokens to generate during evaluation.
+  max_new_tokens: 20
+
+evaluation:
+  # Max number of validation examples to evaluate; set null for full split.
+  val_samples: null
+  # Max number of test examples to evaluate; set null for full split.
+  test_samples: null
+
+profiling:
+  # Number of warm-up generate calls to stabilize timing.
+  warmup_iters: 10
+  # Number of measured iterations for latency statistics.
+  measure_iters: 100
+  # Prefix length (tokens) for profiling generate calls.
+  prefix_len: 12
+
+targets:
+  # Non-blocking performance targets for the LSTM path.
+  latency_p50_ms: 50
+  latency_p95_ms: 150
+  memory_mb: 50
+
+ux:
+  # Default number of new tokens shown in the inline suggestion demo.
+  suggest_tail_new_tokens: 12
+
+gpt2:
+  # Max number of samples for DistilGPT2 evaluation if transformers is available.
+  eval_samples: null
+  # Model name for HF hub loading.
+  model_name: distilgpt2
+
+
+checkpoint:
+  # Directory where LSTM checkpoints are stored/loaded from.
+  directory: data
+
+
+normalization:
+  # Regex pattern used to remove URLs from text (matches http/https and www prefixes).
+  # Example: "https://example.com", "http://foo", "www.site.org"
+  url_pattern: '(https?://\S+|www\.\S+)'
+  # Regex flags applied to the URL pattern. Use names from Python's re module (e.g., IGNORECASE, UNICODE, MULTILINE).
+  url_flags: ["IGNORECASE"]
+
+  # Regex pattern used to remove @mentions (e.g., "@user").
+  mention_pattern: '@\w+'
+  # Regex flags applied to the mention pattern. Usually empty; keep UNICODE if you expand beyond [A-Za-z0-9_].
+  mention_flags: []
+
+  # Regex pattern matching emojis and pictographic symbols to strip.
+  # This uses Unicode code point ranges; formatted with alternation in verbose mode so each range is on its own line with a comment.
+  # Adjust ranges if your application needs to retain some symbols (e.g., stars or arrows).
+  emoji_pattern: |
+    (                           # Start group of emoji ranges
+      [\U0001F600-\U0001F64F]   # Emoticons (U+1F600 to U+1F64F)
+    | [\U0001F300-\U0001F5FF]   # Miscellaneous Symbols and Pictographs (U+1F300 to U+1F5FF)
+    | [\U0001F680-\U0001F6FF]   # Transport and Map Symbols (U+1F680 to U+1F6FF)
+    | [\U0001F1E6-\U0001F1FF]   # Regional Indicator Symbols (U+1F1E6 to U+1F1FF)
+    | [\U00002702-\U000027B0]   # Dingbats (U+2702 to U+27B0)
+    | [\U000024C2-\U0001F251]   # Enclosed characters and additional pictographs (U+24C2 to U+1F251)
+    | [\U0001F900-\U0001F9FF]   # Supplemental Symbols and Pictographs (U+1F900 to U+1F9FF)
+    | [\U0001FA70-\U0001FAFF]   # Symbols and Pictographs Extended-A (U+1FA70 to U+1FAFF)
+    | [\U00002600-\U000026FF]   # Miscellaneous Symbols (U+2600 to U+26FF)
+    | [\U00002B50]              # Star (U+2B50)
+    | [\U00002B06-\U00002B07]   # Upwards and Downwards Black Arrows (U+2B06 to U+2B07)
+    | [\U00002B05]              # Leftwards Black Arrow (U+2B05)
+    | [\U00002B55]              # Heavy Large Circle (U+2B55)
+    )+                                  # One or more of the above characters
+  # Regex flags applied to the emoji pattern. UNICODE ensures proper handling of Unicode categories/ranges; VERBOSE enables inline comments/whitespace.
+  emoji_flags: ["UNICODE", "VERBOSE"]
+
+
